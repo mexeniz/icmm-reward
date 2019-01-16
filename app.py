@@ -2,9 +2,9 @@
 from flask import Flask, render_template, request, jsonify, g, abort, send_file
 import json
 import os
-import sqlite3
+from loguru import logger
 from datetime import datetime, timezone, timedelta
-from db import UserDB
+from db import RunnerDB
 
 DEFAULT_CONFIG_PATH = "./config.json"
 DEFAULT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -17,7 +17,16 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 img_dir = os.path.abspath("./images")
 img_type = "png"
 
-config = None
+def load_json_config(config_path):
+    config = None
+    with open(config_path) as f:
+        config = json.load(f)
+    return config
+config = load_json_config(DEFAULT_CONFIG_PATH)
+server_conf = config['server']
+db_conf = config['db']
+RunnerDB.init(db_conf['mongodbUri'], db_conf['mongodbDBName'])
+RunnerDB.set_collection(db_conf['mongodbCollection'])
 
 def create_json_response(data=None, statusCode=0, status=""):
     status = "Success" if statusCode == 0 else status
@@ -31,17 +40,18 @@ def get_db():
         with app.app_context():
             db = get_db()
     """
-    if 'db' not in g:
-        UserDB.connect(config["db"]["path"])
-        g.db = UserDB
-    return g.db
+    return RunnerDB
+#     if 'db' not in g:
+#         # Init database
+#         RunnerDB.init(db_conf['mongodbUri'], db_conf['mongodbDBName'])
+#         RunnerDB.set_collection(db_conf['mongodbCollection'])
+#         g.db = RunnerDB
+#     return g.db
 
-@app.teardown_appcontext
-def close_connection(exception):
-    UserDB.close()
-    # db = g.pop('db', None)
-    # if db is not None:
-    #     db.close()
+# @app.teardown_appcontext 
+# def close_connection(exception): 
+#     RunnerDB.close()
+
 
 @app.route("/static/<path:path>")
 def send_js(path):
@@ -49,7 +59,6 @@ def send_js(path):
 
 @app.route("/")
 def index_get():
-    team_list_link = config["template"]["teamListLink"]
     base_url = config["template"]["baseUrl"]
     base_challenge_cert_url = config["template"]["baseChallengeCertUrl"]
     base_e_reward1_url = config["template"]["baseEReward1Url"]
@@ -64,8 +73,11 @@ def check_user(user, telNumber):
     if user == None or telNumber == None:
         # Not found
         return False
-    assert(user["telNumber"][0:1] == "x" and len(user["telNumber"]) == 5)
-    if not (user["telNumber"][1:] == telNumber):
+    if not user.tel_4_digit and telNumber == "":
+        # Not have tel number data, ignore.
+        return True
+
+    if user.tel_4_digit != telNumber:
         # Not found
         return False
     return True
@@ -73,22 +85,44 @@ def check_user(user, telNumber):
 @app.route("/api/runners/<string:bibNumber>", methods=["GET"])
 def get_user(bibNumber):
     telNumber = request.args.get("pin")
-    if telNumber == None or len(telNumber) != 4:
-        return create_json_response(status=-1, statusCode="Runner not found")
+    if telNumber == None:
+        return create_json_response(statusCode=-1, status="Runner not found")
 
     with app.app_context():
         db = get_db()
-        data = db.getUser(bibNumber)
+        data = db.find_one_runner({'bibNumber': int(bibNumber)})
         if check_user(data, telNumber) == False:
-            return create_json_response(status=-1, statusCode="Runner not found")
-        return create_json_response(status=0, data=data)
+            return create_json_response(statusCode=-1, status="Runner not found")
+        
+        return create_json_response(statusCode=0, data=data.to_doc())
+
+@app.route("/api/runners/<string:bibNumber>/feedback", methods=["PUT"])
+def feedback_user(bibNumber):
+    req = request.get_json(silent=True, force=True)
+    logger.info('receive feedback for bib={}: {}', bibNumber, req)
+    try:
+        feedback = req.get('feedback')
+        challenge_result = req.get('challengeResult')
+        telNumber = req.get('pin')
+    except AttributeError:
+        return create_json_response(statusCode=-1, status="JSON error")
+    
+    with app.app_context():
+        db = get_db()
+        data = db.find_one_runner({'bibNumber': int(bibNumber)})
+        if check_user(data, telNumber) == False:
+            return create_json_response(statusCode=-1, status="Runner not found")
+
+        db.update_one_runner_feedback({'bibNumber':int(bibNumber)}, feedback, challenge_result)
+        data.feedback = feedback    
+        return create_json_response(statusCode=0, data=data.to_doc())
 
 @app.route("/img/challengeCert/<string:bibNumber>", methods=["GET"])
 def get_cert_img(bibNumber):
     telNumber = request.args.get("pin")
     with app.app_context():
         db = get_db()
-        data = db.getUser(bibNumber)
+        data = db.find_one_runner({'bibNumber': int(bibNumber)})
         if check_user(data, telNumber) == False:
             abort(404)
 
@@ -103,15 +137,9 @@ def get_ereward_img(templateId, bibNumber):
     telNumber = request.args.get("pin")
     with app.app_context():
         db = get_db()
-        data = db.getUser(bibNumber)
+        data = db.find_one_runner({'bibNumber': int(bibNumber)})
         if check_user(data, telNumber) == False:
             abort(404)
-
-        file_name = img_dir + "/eReward-%s-%s.png" % (templateId,bibNumber)
-        if not os.path.isfile(file_name):
-            abort(404)
-
-        return send_file(file_name, mimetype='image/%s' % img_type)
 
 def load_json_config(config_path):
     config = None
@@ -120,19 +148,15 @@ def load_json_config(config_path):
     return config
 
 def main():
-    global config
-    config = load_json_config(DEFAULT_CONFIG_PATH)
-    server_conf = config["server"]
-
     debug_flag = False
-    if "debug" in config["server"]:
-        debug_flag = config["server"]["debug"]
+    if 'debug' in config['server']:
+        debug_flag = config['server']['debug']
     
     try:
-        app.run(host=server_conf["bindAddress"], port=server_conf["port"], debug=debug_flag)
+        app.run(host=server_conf['bindAddress'], port=server_conf['port'], debug=debug_flag)
     finally:
         # Caught an interrupt or some error.
-        UserDB.close()
+        RunnerDB.close()
 
 if __name__ == "__main__":
     main()

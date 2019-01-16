@@ -2,34 +2,33 @@
 {% block body %}
 <div class="jumbotron jumbotron-fluid">
     <div class="container">
-        <h2 class="display-6">ICMM 2019: e-Reward</h2>
-        <p>challenge</p>
+        <h3>กดรับ Challenge Certificate จากงาน ICMM2019</h3>
+        <p>จากที่ทุกท่านได้กรอกมาตอนสมัครไว้ในหัวข้อ "ภายใน 3 เดือนก่อนงาน ICMM2019 อยากทำอะไรให้สำเร็จ"</p>
+        <p>ทางทีมงานอยากจะมอบ certifcate นี้กเป็นรางวัลให้กับทุกคนที่ทำได้สำเร็จ</p>
         <br>
-        <h2 class="display-6">รายละเอียด</h2>
-        <p>กรอกเลข bib และเลข 4 หลักสุดท้ายของเบอร์โทรศัพท์</p>
+        <h5 class="display-6"><u>วิธีกดรับ certificate</u></h5>
+        <p>1. กรอกเลขหมายบิบ เช่น จากป้ายบิบ E25-6800 หมายเลขบิบคือ 6800</p>
+        <p>2. กรอกเลข 4 หลักสุดท้ายของเบอร์โทรศัพท์ <span class="text-danger">**หากไม่เคยกรอกไว้ตอนลงทะเบียนวิ่งให้เว้นว่างไว้**</span></p>
+        <p>3. กดปุ่มค้นหา หากข้อมูลถูกต้อง ระบบแสดงฟอร์มกรอกผลลัพธ์ของ Challenge</p>
+        <p>4. กรอกผลลัพธ์แล้วกดปุ่มถัดไปเพื่อกรอกความเห็นสำหรับงานวิ่ง ICMM2019</p>
+        <p>5. กดส่งความเห็นแล้วระบบจะแสดง certificate และของขวัญสุดพิเศษให้</p>
     </div>
 </div>
 <div class="container">
     <div class="panel-body">
         <div class="row">
             <div class="col-lg-12">
-                <form id="login-form" role="form" style="display: block;">
-                    <!-- <div class="form-group">
-                        <label>ระยะที่สมัคร</label>
-                        <select autofocus class="form-control" id="raceCategory">
-                            <option value="5K">Fun Run 5K </option>
-                            <option selected value="10K">Mini Marathon 10K</option>
-                        </select>
-                    </div> -->
+                <form id="search-form" role="form" style="display: block;">
                     <div class="form-group">
                         <label>หมายเลขบิบ</label>
                         <input type="text" name="bibNumber" id="bibNumber" tabindex="1" class="form-control" pattern="^[0-9]{4}$"
-                            minlength=1 maxlength=4 placeholder="เลขบิบ" required>
+                            minlength=1 maxlength=4 placeholder="หมายเลขบิบ เช่น 6800" required>
                     </div>
                     <div class="form-group">
                         <label>หมายเลขโทรศัพท์</label>
                         <input type="password" name="telNumber" id="telNumber" tabindex="2" class="form-control"
-                            minlength=4 maxlength=4 placeholder="เบอร์โทร 4 หลักสุดท้าย" required>
+                            minlength=4 maxlength=4 placeholder="เบอร์โทร 4 หลักสุดท้าย (หากไม่เคยกรอกไว้ตอนลงทะเบียวิ่งให้เว้นว่างไว้)"
+                            required>
                     </div>
                     <div class="form-group">
                         <button type="button" id="searchButton" class="btn btn-primary">
@@ -46,49 +45,112 @@
 
 <script>
     $(document).ready(function () {
-        var updateRewardSrc = function(bibNumber, pin) {
-            var challengeCertUrl = "{{ baseChallengeCertUrl }}" + bibNumber + "?pin=" + pin ;
-            var eReward1Url = "{{ baseEReward1Url }}" + bibNumber + "?pin=" + pin ;
-            var eReward2Url = "{{ baseEReward2Url }}" + bibNumber + "?pin=" + pin ;
-            
-            $("#challegeCertImage").attr("src", challengeCertUrl);    
-            $("#eReward1Image").attr("src", eReward1Url);    
-            $("#eReward2Image").attr("src", eReward2Url);    
+        var updateRewardSrc = function (bibNumber, pin) {
+            var challengeCertUrl = "{{ baseChallengeCertUrl }}" + bibNumber + "?pin=" + pin;
+            var eReward1Url = "{{ baseEReward1Url }}" + bibNumber + "?pin=" + pin;
+
+            $("#challegeCertImage").attr("src", challengeCertUrl);
+            $("#eReward1Image").attr("src", eReward1Url);
         };
+
         $("#searchButton").click(function () {
             var bibNumber = $("#bibNumber").val();
             var tel4Digit = $("#telNumber").val();
 
-            if (bibNumber.length == 0){
+            if (bibNumber.length == 0) {
                 alert("กรุณากรอกหมายเลขบิบ");
                 return;
             }
-            if (tel4Digit.length != 4){
-                alert("กรุณากรอกเบอร์โทรให้ครบ 4 หลัก");
-                return;
-            }
 
-            console.log("Get data: bibNumber=" + bibNumber + " pin=" + tel4Digit);
-            var url = "api/runners/" + bibNumber + "?pin=" + tel4Digit ;
+            // console.log("Get data: bibNumber=" + bibNumber + " pin=" + tel4Digit);
+            var url = "api/runners/" + bibNumber + "?pin=" + tel4Digit;
             $.ajax({
                 type: "GET",
                 dataType: "json",
                 url: url,
-                success: function(data){
-                    console.log(data)
-                    if(data.statuscode == 0){
+                success: function (data) {
+                    if (data.statuscode == 0 && data.data.challengeResult !== null) {
+                        // Runner have submitted form.
                         updateRewardSrc(bibNumber, tel4Digit);
                         $("#eRewardModal").modal("show");
                         $("#errorModal").modal("hide");
-                    }else{
+                    } else if (data.statuscode == 0 && data.data.challengeResult === null) {
+                        // Runner have not submitted form yet.
+                        $("#myChallenge").text(data.data.challenge);
+                        $("#formModal1").modal("show");
+                        $("#errorModal").modal("hide");
+                    } else {
                         $("#errorModal").modal("show");
+                        $("#formModal1").modal("hide");
                         $("#eRewardModal").modal("hide");
                     }
                 },
-                error: function(err){
+                error: function (err) {
+                    alert("Cannot connect to server or server error");
+                }
+            });
+        });
+        $("#submitFeedbackButton").click(function () {
+            var bibNumber = $("#bibNumber").val();
+            var tel4Digit = $("#telNumber").val();
+            var challengeResult = $("#challengeResult").val();
+            var feedback = $("#feedback").val();
+
+            if (challengeResult.length == 0) {
+                alert("กรุณากรอกผลลัพธ์ของ Change");
+                return;
+            }
+
+            // console.log("Update runner data: bibNumber=" + bibNumber + " pin=" + tel4Digit +
+            //     " challengeResult=" + challengeResult + " feedback=" + feedback);
+            var url = "api/runners/" + bibNumber + "/feedback";
+            var data = {
+                "pin": tel4Digit,
+                "challengeResult": challengeResult,
+                "feedback": feedback
+            }
+            $.ajax({
+                type: "PUT",
+                dataType: "json",
+                url: url,
+                data: JSON.stringify(data),
+                success: function (data) {
+                    if (data.statuscode == 0) {
+                        updateRewardSrc(bibNumber, tel4Digit);
+                        $("#eRewardModal").modal("show");
+                        $("#formModal2").modal("hide");
+                        $("#errorModal").modal("hide");
+                    } else {
+                        alert("พบข้อผิดพลาดกรุณาลองใหม่อีกครั้ง");
+                        $("#eRewardModal").modal("hide");
+                    }
+                },
+                error: function (err) {
                     alert("Cannot connect to server");
                 }
             });
+        });
+        /*
+        Form modal controller
+        */
+        $("div[id^='formModal']").each(function () {
+
+            var currentModal = $(this);
+
+            //click next
+            currentModal.find('.btn-next').click(function () {
+                currentModal.modal('hide');
+                currentModal.closest("div[id^='formModal']").nextAll("div[id^='formModal']").first()
+                    .modal('show');
+            });
+
+            //click prev
+            currentModal.find('.btn-prev').click(function () {
+                currentModal.modal('hide');
+                currentModal.closest("div[id^='formModal']").prevAll("div[id^='formModal']").first()
+                    .modal('show');
+            });
+
         });
     });
 </script>
