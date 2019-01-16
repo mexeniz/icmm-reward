@@ -1,4 +1,19 @@
 <!-- e-Reward Modal -->
+<style>
+    @media (max-width: 500px) {
+        #challegeCertContainer{
+            justify-content: center;
+        }
+        #eReward1Image{
+            width:98vw;
+            height:98vw !important;
+        }
+        #challegeCertImage{
+            width:98vw;
+            height:138.45vw !important;
+        }
+    }
+</style>
 <div class="modal fade" id="eRewardModal" tabindex="-1" role="dialog" aria-labelledby="eRewardModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -9,36 +24,15 @@
                 </button>
             </div>
             <div class="modal-body">
-                <h5>ขอบคุณสำหรับความเห็นค่ะ</h5>
+                <p>ขอบคุณสำหรับความเห็น</p>
                 <br>
-                <div class="row" style="justify-content: center;">
-                    <h3><u>Challenge Certificate</u></h3>
-                </div>
-                <div class="row" style="justify-content: center;">
-                    <style>
-                        @media (max-width: 500px) {
-                            #challegeCertImage{
-                                width:98vw;
-                                height:98vw !important;
-                            }
-                        }
-                    </style>
+                <h3>Challenge Certificate</h3>
+                <div class="row" id="challegeCertContainer">
                     <img id="challegeCertImage" class="img-fluid" alt="Responsive image" style="height: 500px" src="">
                 </div>
-                <br>
-                <div class="row" style="justify-content: center;">
-                    <h3><u>Special Gift</u></h3>
-                </div>
-                <div class="row" style="justify-content: center;">
-                    <style>
-                        @media (max-width: 500px) {
-                            #eReward1Image{
-                                width:98vw;
-                                height:98vw !important;
-                            }
-                        }
-                    </style>
-                    <img id="eReward1Image" class="img-fluid" alt="Responsive image" style="height: 350px" src="">
+                <h3>Special Gift</h3>
+                <div class="row">
+                    <img id="eReward1Image" class="img-fluid" alt="Responsive image" style="height: 500px" src="">
                 </div>
             </div>
             <div class="modal-footer">
