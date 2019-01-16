@@ -1,4 +1,19 @@
 <!-- e-Reward Modal -->
+<style>
+    @media (max-width: 500px) {
+        #challegeCertContainer{
+            justify-content: center;
+        }
+        #eReward1Image{
+            width:98vw;
+            height:98vw !important;
+        }
+        #challegeCertImage{
+            width:98vw;
+            height:138.45vw !important;
+        }
+    }
+</style>
 <div class="modal fade" id="eRewardModal" tabindex="-1" role="dialog" aria-labelledby="eRewardModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -14,15 +29,7 @@
                 <div class="row" style="justify-content: center;">
                     <h3><u>Challenge Certificate</u></h3>
                 </div>
-                <div class="row" style="justify-content: center;">
-                    <style>
-                        @media (max-width: 500px) {
-                            #challegeCertImage{
-                                width:98vw;
-                                height:98vw !important;
-                            }
-                        }
-                    </style>
+                <div class="row" id="challegeCertContainer" style="justify-content: center;">
                     <img id="challegeCertImage" class="img-fluid" alt="Responsive image" style="height: 500px" src="">
                 </div>
                 <br>
@@ -30,15 +37,7 @@
                     <h3><u>Special Gift</u></h3>
                 </div>
                 <div class="row" style="justify-content: center;">
-                    <style>
-                        @media (max-width: 500px) {
-                            #eReward1Image{
-                                width:98vw;
-                                height:98vw !important;
-                            }
-                        }
-                    </style>
-                    <img id="eReward1Image" class="img-fluid" alt="Responsive image" style="height: 350px" src="">
+                    <img id="eReward1Image" class="img-fluid" alt="Responsive image" style="height: 500px" src="">
                 </div>
             </div>
             <div class="modal-footer">
