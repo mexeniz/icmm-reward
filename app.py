@@ -6,8 +6,22 @@ from loguru import logger
 from datetime import datetime, timezone, timedelta
 from db import RunnerDB
 
-DEFAULT_CONFIG_PATH = "./config.json"
 DEFAULT_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+BIND_ADDRESS= os.environ.get('BIND_ADDESS', 'localhost')
+PORT = int(os.environ.get('PORT', 5000))
+ENV_MODE = os.environ.get('ENV_MODE', 'production').lower()
+# MongoDB Config
+MONGODB_URI = os.environ.get('MONGODB_URI')
+MONGODB_DB_NAME = os.environ.get('MONGODB_DB_NAME')
+MONGODB_COLLECTION = os.environ.get('MONGODB_COLLECTION')
+# UI Config
+UI_TEMPLATE_BASE_URL = os.environ.get('UI_TEMPLATE_BASE_URL')
+UI_TEMPLATE_BASE_CHALLENGE_CERT_URL = os.environ.get('UI_TEMPLATE_BASE_CHALLENGE_CERT_URL')
+UI_TEMPLATE_BASE_E_REWARD1_URL = os.environ.get('UI_TEMPLATE_BASE_E_REWARD1_URL')
+UI_TEMPLATE_BASE_E_REWARD2_URL = os.environ.get('UI_TEMPLATE_BASE_E_REWARD2_URL')
+
+print('NUM_WORKER:', os.environ.get('NUM_WORKER'))
 
 template_dir = os.path.abspath("./views")
 app = Flask(__name__,  template_folder=template_dir, static_url_path="/static")
@@ -22,11 +36,9 @@ def load_json_config(config_path):
     with open(config_path) as f:
         config = json.load(f)
     return config
-config = load_json_config(DEFAULT_CONFIG_PATH)
-server_conf = config['server']
-db_conf = config['db']
-RunnerDB.init(db_conf['mongodbUri'], db_conf['mongodbDBName'])
-RunnerDB.set_collection(db_conf['mongodbCollection'])
+
+RunnerDB.init(MONGODB_URI, MONGODB_DB_NAME)
+RunnerDB.set_collection(MONGODB_COLLECTION)
 
 def create_json_response(data=None, statusCode=0, status=""):
     status = "Success" if statusCode == 0 else status
@@ -59,15 +71,11 @@ def send_js(path):
 
 @app.route("/")
 def index_get():
-    base_url = config["template"]["baseUrl"]
-    base_challenge_cert_url = config["template"]["baseChallengeCertUrl"]
-    base_e_reward1_url = config["template"]["baseEReward1Url"]
-    base_e_reward2_url = config["template"]["baseEReward2Url"]
     return render_template("index.html", 
-        baseUrl=base_url,
-        baseChallengeCertUrl=base_challenge_cert_url,
-        baseEReward1Url=base_e_reward1_url,
-        baseEReward2Url=base_e_reward2_url)
+        baseUrl=UI_TEMPLATE_BASE_URL,
+        baseChallengeCertUrl=UI_TEMPLATE_BASE_CHALLENGE_CERT_URL,
+        baseEReward1Url=UI_TEMPLATE_BASE_E_REWARD1_URL,
+        baseEReward2Url=UI_TEMPLATE_BASE_E_REWARD2_URL)
 
 def check_user(user, telNumber):
     if user == None or telNumber == None:
@@ -148,12 +156,10 @@ def load_json_config(config_path):
     return config
 
 def main():
-    debug_flag = False
-    if 'debug' in config['server']:
-        debug_flag = config['server']['debug']
-    
+    debug_flag = ENV_MODE != 'production'
+
     try:
-        app.run(host=server_conf['bindAddress'], port=server_conf['port'], debug=debug_flag)
+        app.run(host=BIND_ADDRESS, port=PORT, debug=debug_flag)
     finally:
         # Caught an interrupt or some error.
         RunnerDB.close()

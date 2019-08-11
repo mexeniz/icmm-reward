@@ -1,0 +1,20 @@
+version: '3.4'
+
+services:
+  app-server:
+    build: .
+    environment:
+      - ENV_MODE=production
+      - MONGODB_URI=mongodb://your_mongodb_uri
+      - MONGODB_DB_NAME=db_name
+      - MONGODB_COLLECTION=bib_subscribers
+      - UI_TEMPLATE_BASE_URL=
+      - UI_TEMPLATE_BASE_CHALLENGE_CERT_URL=http://0.0.0.0:1234/img/challengeCert/
+      - UI_TEMPLATE_BASE_E_REWARD1_URL=http://0.0.0.0:1234/img/eReward/1/
+      - UI_TEMPLATE_BASE_E_REWARD2_URL=http://0.0.0.0:1234/img/eReward/2/
+    volumes:
+      - ./data:/data
+    command: gunicorn -b "localhost:5000" -w 4 app:app
+    ports:
+      - 8060:5000
+  
